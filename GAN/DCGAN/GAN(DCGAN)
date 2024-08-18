@@ -1,0 +1,107 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.utils.data import DataLoader
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+
+class Generator(nn.Module):
+    def __init__(self,in_features,hid_features,out_features):
+        super(Generator,self).__init__()
+        self.layer=nn.Sequential(
+            nn.ConvTranspose2d(
+                in_channels=in_features,
+                out_channels=hid_features*4,
+                kernel_size=4,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
+            nn.BatchNorm2d(hid_features*4),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(
+                in_channels=hid_features*4,
+                out_channels=hid_features*2,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(hid_features*2),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(
+                in_channels=hid_features*2,
+                out_channels=hid_features,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(hid_features),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(
+                in_channels=hid_features,
+                out_channels=out_features,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.Tanh()
+        )
+    
+    def forward(self,x):
+        output=self.layer(x)
+        return output
+    
+class Discriminator(nn.Module):
+    def __init__(self,in_features,filter):
+        super(Discriminator,self).__init__()
+        self.layer=nn.Sequential(
+            nn.Conv2d(
+                in_channels=in_features,
+                out_channels=filter,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(filter),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(
+                in_channels=filter,
+                out_channels=filter*2,
+                kernel_size=4,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(filter*2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(
+                in_channels=filter*2,
+                out_channels=filter*4,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                bias=False,
+            ),
+            nn.BatchNorm2d(filter*4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(
+                in_channels=filter*4,
+                out_channels=1,
+                kernel_size=4,
+                stride=1,
+                padding=0,
+                bias=False,
+            ),
+            nn.Sigmoid(),
+        )
+    
+    def forward(self,x):
+        x=self.layer(x)
+        return x.view(-1,1).squeeze(1)
+    
+    
